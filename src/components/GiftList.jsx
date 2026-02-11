@@ -11,14 +11,17 @@ export default function GiftList() {
     const [selectedGift, setSelectedGift] = useState(null);
     const [showPixModal, setShowPixModal] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('all'); // all | up50 | 50to100 | 100to200 | above200
+
+    // Filters & Sort State
+    const [filter, setFilter] = useState('all'); // Price filter
+    const [categoryFilter, setCategoryFilter] = useState('all'); // Category filter
+    const [sortOrder, setSortOrder] = useState('price_asc'); // price_asc | price_desc
 
     const fetchGifts = async () => {
         setLoading(true);
         const { data, error } = await supabase
             .from('gifts')
-            .select('*')
-            .order('name', { ascending: true }); // Alphabetical order mostly
+            .select('*');
 
         if (data) setGifts(data);
         setLoading(false);
@@ -28,18 +31,39 @@ export default function GiftList() {
         fetchGifts();
     }, []);
 
-    const filteredGifts = gifts.filter(gift => {
-        if (filter === 'all') return true;
+    const filteredGifts = gifts
+        .filter(gift => {
+            // 1. Price Filter
+            const price = parseFloat(gift.price || 0);
+            let matchesPrice = true;
+            if (filter === 'up50') matchesPrice = price <= 50;
+            if (filter === '50to100') matchesPrice = price > 50 && price <= 100;
+            if (filter === '100to200') matchesPrice = price > 100 && price <= 200;
+            if (filter === 'above200') matchesPrice = price > 200;
 
-        // Remove R$ if present (though database should be numeric really, but handled just in case)
-        const price = parseFloat(gift.price || 0);
+            // 2. Category Filter
+            let matchesCategory = true;
+            if (categoryFilter !== 'all') {
+                if (categoryFilter === 'Geral') {
+                    matchesCategory = !gift.category || gift.category === 'Geral';
+                } else {
+                    matchesCategory = gift.category === categoryFilter;
+                }
+            }
 
-        if (filter === 'up50') return price <= 50;
-        if (filter === '50to100') return price > 50 && price <= 100;
-        if (filter === '100to200') return price > 100 && price <= 200;
-        if (filter === 'above200') return price > 200;
-        return true;
-    });
+            return matchesPrice && matchesCategory;
+        })
+        .sort((a, b) => {
+            // 3. Sorting
+            const priceA = parseFloat(a.price || 0);
+            const priceB = parseFloat(b.price || 0);
+
+            if (sortOrder === 'price_asc') return priceA - priceB;
+            if (sortOrder === 'price_desc') return priceB - priceA;
+            return 0;
+        });
+
+    const CATEGORIES = ['Cozinha', 'Banheiro', 'Quarto', 'Sala', 'Lavanderia', 'Decoração', 'Eletros', 'Geral'];
 
     return (
         <div className="min-h-screen bg-orange-50 font-sans text-slate-900 pb-20">
@@ -108,38 +132,86 @@ export default function GiftList() {
                     </div>
                 </div>
 
-                {/* Filter Pills */}
-                <div className="sticky top-4 z-40 py-2 -mx-4 px-4 overflow-x-auto no-scrollbar flex justify-start md:justify-center gap-2 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 bg-orange-50/95 backdrop-blur-sm md:bg-transparent">
-                    <div className="flex gap-2 mx-auto">
-                        {[
-                            { id: 'all', label: 'Todos' },
-                            { id: 'up50', label: 'Até R$ 50' },
-                            { id: '50to100', label: 'R$ 50 - R$ 100' },
-                            { id: '100to200', label: 'R$ 100 - R$ 200' },
-                            { id: 'above200', label: '+ R$ 200' },
-                        ].map(opt => (
+                {/* --- FILTERS & SORTING SECTION --- */}
+                <div className="mb-8 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
+
+                    {/* 1. Category Filters (Scrollable) */}
+                    <div className="overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
+                        <div className="flex gap-2 w-max mx-auto md:mx-0 md:justify-center md:w-full">
                             <button
-                                key={opt.id}
-                                onClick={() => setFilter(opt.id)}
+                                onClick={() => setCategoryFilter('all')}
                                 className={`
-                                    whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all border
-                                    ${filter === opt.id
-                                        ? 'bg-orange-500 text-white border-orange-500 shadow-md scale-105'
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-orange-50 hover:border-orange-200'
+                                    px-4 py-2 rounded-full text-sm font-bold transition-all border whitespace-nowrap
+                                    ${categoryFilter === 'all'
+                                        ? 'bg-slate-800 text-white border-slate-800 shadow-md'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                     }
                                 `}
                             >
-                                {opt.label}
+                                Todas as Categorias
                             </button>
-                        ))}
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setCategoryFilter(cat)}
+                                    className={`
+                                        px-4 py-2 rounded-full text-sm font-bold transition-all border whitespace-nowrap
+                                        ${categoryFilter === cat
+                                            ? 'bg-orange-500 text-white border-orange-500 shadow-md'
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-orange-50'
+                                        }
+                                    `}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 2. Price Filters & Sorting (Stacked on mobile, Row on desktop) */}
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+
+                        {/* Price Range */}
+                        <div className="flex flex-wrap justify-center gap-2">
+                            {[
+                                { id: 'all', label: 'Qualquer Preço' },
+                                { id: 'up50', label: 'Até R$ 50' },
+                                { id: '50to100', label: 'R$ 50-100' },
+                                { id: '100to200', label: 'R$ 100-200' },
+                                { id: 'above200', label: '+ R$ 200' },
+                            ].map(opt => (
+                                <button
+                                    key={opt.id}
+                                    onClick={() => setFilter(opt.id)}
+                                    className={`
+                                        px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border
+                                        ${filter === opt.id
+                                            ? 'bg-orange-100 text-orange-800 border-orange-200'
+                                            : 'bg-transparent text-slate-500 border-transparent hover:bg-white/50'
+                                        }
+                                    `}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Sorting Dropdown */}
+                        <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-slate-200 shadow-sm">
+                            <span className="text-xs font-medium text-slate-400 pl-2">Ordenar:</span>
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className="text-xs font-bold text-slate-700 bg-transparent border-none focus:ring-0 cursor-pointer pr-8 py-1"
+                            >
+                                <option value="price_asc">Menor Preço</option>
+                                <option value="price_desc">Maior Preço</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
                 {/* CONTENT GRID */}
-                {/* 
-                   Mobile: grid-cols-2 (2 items per row)
-                   Gap: smaller gap-3 on mobile to fit items better 
-                */}
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>

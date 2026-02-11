@@ -13,7 +13,7 @@ export default function AdminPanel({ onClose }) {
     const [modalMode, setModalMode] = useState('create'); // create | edit
     const [currentGift, setCurrentGift] = useState({
         name: '', description: '', price: '', image_url: '', product_link: '',
-        warning_title: '', warning_message: ''
+        warning_title: '', warning_message: '', category: ''
     });
 
     const fetchGifts = async () => {
@@ -41,7 +41,7 @@ export default function AdminPanel({ onClose }) {
         setModalMode('create');
         setCurrentGift({
             name: '', description: '', price: '', image_url: '', product_link: '',
-            warning_title: '', warning_message: ''
+            warning_title: '', warning_message: '', category: ''
         });
         setIsModalOpen(true);
     };
@@ -51,7 +51,8 @@ export default function AdminPanel({ onClose }) {
         setCurrentGift({
             ...gift,
             warning_title: gift.warning_title || '',
-            warning_message: gift.warning_message || ''
+            warning_message: gift.warning_message || '',
+            category: gift.category || ''
         });
         setIsModalOpen(true);
     };
@@ -101,6 +102,7 @@ export default function AdminPanel({ onClose }) {
             p_product_link: currentGift.product_link,
             p_warning_title: currentGift.warning_title || null,
             p_warning_message: currentGift.warning_message || null,
+            p_category: currentGift.category || null,
             p_secret_key: password
         };
 
@@ -193,7 +195,12 @@ export default function AdminPanel({ onClose }) {
                                             ) : <Gift className="w-full h-full p-2 text-slate-300" />}
                                         </div>
                                     </td>
-                                    <td className="p-4 font-medium text-slate-800">{gift.name}</td>
+                                    <td className="p-4 font-medium text-slate-800">
+                                        {gift.name}
+                                        {gift.category && (
+                                            <span className="block text-xs text-slate-400 font-normal mt-0.5">{gift.category}</span>
+                                        )}
+                                    </td>
                                     <td className="p-4 hidden md:table-cell">R$ {parseFloat(gift.price).toFixed(2)}</td>
                                     <td className="p-4">
                                         {gift.reserved_by ? (
@@ -238,7 +245,7 @@ export default function AdminPanel({ onClose }) {
             {isModalOpen && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95">
+                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
                         <h3 className="text-xl font-bold text-slate-800 mb-6">
                             {modalMode === 'create' ? 'Novo Item' : 'Editar Item'}
                         </h3>
@@ -265,14 +272,32 @@ export default function AdminPanel({ onClose }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Link da Imagem</label>
-                                    <input
-                                        className="w-full px-4 py-2 border rounded-lg"
-                                        placeholder="https://..."
-                                        value={currentGift.image_url || ''}
-                                        onChange={e => setCurrentGift({ ...currentGift, image_url: e.target.value })}
-                                    />
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                                    <select
+                                        className="w-full px-4 py-2 border rounded-lg bg-white"
+                                        value={currentGift.category || ''}
+                                        onChange={e => setCurrentGift({ ...currentGift, category: e.target.value })}
+                                    >
+                                        <option value="">Geral (Sem Categoria)</option>
+                                        <option value="Cozinha">Cozinha</option>
+                                        <option value="Banheiro">Banheiro</option>
+                                        <option value="Quarto">Quarto</option>
+                                        <option value="Sala">Sala</option>
+                                        <option value="Lavanderia">Lavanderia</option>
+                                        <option value="Decoração">Decoração</option>
+                                        <option value="Eletros">Eletros</option>
+                                    </select>
                                 </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Link da Imagem</label>
+                                <input
+                                    className="w-full px-4 py-2 border rounded-lg"
+                                    placeholder="https://..."
+                                    value={currentGift.image_url || ''}
+                                    onChange={e => setCurrentGift({ ...currentGift, image_url: e.target.value })}
+                                />
                             </div>
 
                             <div>
