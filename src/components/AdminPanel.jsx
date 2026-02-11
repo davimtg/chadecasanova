@@ -115,6 +115,24 @@ export default function AdminPanel({ onClose }) {
     }).length;
     const availableItems = totalItems - reservedItems;
 
+    // Calculate Total Value of Reserved Items
+    const totalReservedValue = gifts.reduce((acc, gift) => {
+        const price = parseFloat(gift.price) || 0;
+
+        // Scenario A: Multi-quantity item
+        if (gift.max_quantity > 1) {
+            const reservedQty = gift.current_quantity || 0;
+            return acc + (price * reservedQty);
+        }
+
+        // Scenario B: Single item (reserved if reserved_by is set)
+        if (gift.reserved_by) {
+            return acc + price;
+        }
+
+        return acc;
+    }, 0);
+
 
     const getLogisticsSummary = (gift) => {
         if (!gift.reservations || !Array.isArray(gift.reservations) || gift.reservations.length === 0) return null;
@@ -327,25 +345,32 @@ export default function AdminPanel({ onClose }) {
                     </div>
 
                     {/* Stats Dashboard */}
-                    <div className="grid grid-cols-3 gap-3 md:gap-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
                             <p className="text-xs md:text-sm text-slate-500 font-medium mb-1">Total de Itens</p>
                             <p className="text-2xl md:text-3xl font-bold text-slate-800">{totalItems}</p>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl border border-emerald-100 bg-emerald-50/50 shadow-sm text-center">
-                            <p className="text-xs md:text-sm text-emerald-600 font-medium mb-1">Disponíveis</p>
-                            <p className="text-2xl md:text-3xl font-bold text-emerald-700">{availableItems}</p>
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-rose-100 bg-rose-50/50 shadow-sm text-center">
                             <p className="text-xs md:text-sm text-rose-600 font-medium mb-1">Esgotados/Reserv.</p>
                             <p className="text-2xl md:text-3xl font-bold text-rose-700">{reservedItems}</p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-orange-100 bg-orange-50/50 shadow-sm text-center col-span-3 md:col-span-1">
+
+                        {/* NEW: Total Value of Reserved Properties */}
+                        <div className="bg-white p-4 rounded-xl border border-blue-100 bg-blue-50/50 shadow-sm text-center">
+                            <p className="text-xs md:text-sm text-blue-600 font-medium mb-1 flex items-center justify-center gap-1">
+                                <Gift size={14} /> Valor em Presentes
+                            </p>
+                            <p className="text-xl md:text-2xl font-bold text-blue-700 truncate" title={`R$ ${totalReservedValue.toFixed(2)}`}>
+                                R$ {totalReservedValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl border border-orange-100 bg-orange-50/50 shadow-sm text-center">
                             <p className="text-xs md:text-sm text-orange-600 font-medium mb-1 flex items-center justify-center gap-1">
                                 <Wallet size={14} /> Total em Pix
                             </p>
-                            <p className="text-2xl md:text-3xl font-bold text-orange-700">
-                                R$ {pixDonations.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0).toFixed(2).replace('.', ',')}
+                            <p className="text-xl md:text-2xl font-bold text-orange-700 truncate">
+                                R$ {pixDonations.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                         </div>
                     </div>
