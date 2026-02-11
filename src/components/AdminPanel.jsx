@@ -370,7 +370,7 @@ export default function AdminPanel({ onClose }) {
                                 <Wallet size={14} /> Total em Pix
                             </p>
                             <p className="text-xl md:text-2xl font-bold text-orange-700 truncate">
-                                R$ {pixDonations.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                R$ {pixDonations.filter(p => p.status === 'received').reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </p>
                         </div>
                     </div>
@@ -588,7 +588,59 @@ export default function AdminPanel({ onClose }) {
                     Extrato de Pix (Intenções)
                 </h2>
 
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                {/* Mobile View: Cards */}
+                <div className="grid grid-cols-1 gap-3 md:hidden">
+                    {pixDonations.length === 0 ? (
+                        <p className="text-center text-slate-400 italic py-8 bg-white rounded-xl border border-slate-200">
+                            Nenhuma doação registrada ainda.
+                        </p>
+                    ) : pixDonations.map(pix => (
+                        <div key={pix.id} className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex flex-col gap-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="font-bold text-slate-800">{pix.donor_name}</h3>
+                                    <p className="text-xs text-slate-400">
+                                        {new Date(pix.created_at).toLocaleDateString('pt-BR')} às {new Date(pix.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold border flex items-center gap-1
+                                    ${pix.status === 'received'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                                        : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                                    }`}
+                                >
+                                    {pix.status === 'received' ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
+                                    {pix.status === 'received' ? 'Recebido' : 'Pendente'}
+                                </span>
+                            </div>
+
+                            {pix.message && (
+                                <div className="bg-slate-50 p-3 rounded-lg text-sm text-slate-600 italic border border-slate-100">
+                                    "{pix.message}"
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-50 mt-1">
+                                <span className="text-lg font-bold text-emerald-600">
+                                    R$ {parseFloat(pix.amount).toFixed(2).replace('.', ',')}
+                                </span>
+                                <button
+                                    onClick={() => handleUpdatePixStatus(pix)}
+                                    className={`text-xs font-bold px-4 py-2 rounded-lg transition-colors
+                                        ${pix.status === 'received'
+                                            ? 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'}
+                                    `}
+                                >
+                                    {pix.status === 'received' ? 'Desmarcar' : 'Confirmar'}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop View: Table */}
+                <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <table className="w-full text-left text-sm text-slate-600">
                         <thead className="bg-orange-50 text-orange-900 font-semibold border-b border-orange-100">
                             <tr>
@@ -648,215 +700,214 @@ export default function AdminPanel({ onClose }) {
                         </tbody>
                     </table>
                 </div>
-            </div>
 
-            {/* Edit/Create Modal */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                            {modalMode === 'create' ? <Plus className="text-rose-500" /> : <Edit2 className="text-indigo-500" />}
-                            {modalMode === 'create' ? 'Novo Item' : 'Editar Item'}
-                        </h3>
+                {/* Edit/Create Modal */}
+                {isModalOpen && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+                        <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                            <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                {modalMode === 'create' ? <Plus className="text-rose-500" /> : <Edit2 className="text-indigo-500" />}
+                                {modalMode === 'create' ? 'Novo Item' : 'Editar Item'}
+                            </h3>
 
-                        <form onSubmit={handleSave} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Item</label>
-                                <input
-                                    required
-                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                    value={currentGift.name}
-                                    onChange={e => setCurrentGift({ ...currentGift, name: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleSave} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Preço (R$)</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Item</label>
                                     <input
-                                        type="number" step="0.01"
+                                        required
                                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        value={currentGift.price}
-                                        onChange={e => setCurrentGift({ ...currentGift, price: e.target.value })}
+                                        value={currentGift.name}
+                                        onChange={e => setCurrentGift({ ...currentGift, name: e.target.value })}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Qtd. Máxima</label>
-                                    <input
-                                        type="number" step="1" min="1"
-                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        placeholder="1"
-                                        value={currentGift.max_quantity || ''}
-                                        onChange={e => setCurrentGift({ ...currentGift, max_quantity: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-                                    <select
-                                        className="w-full px-4 py-2 border rounded-xl bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        value={currentGift.category || ''}
-                                        onChange={e => setCurrentGift({ ...currentGift, category: e.target.value })}
-                                    >
-                                        <option value="">Geral (Sem Categoria)</option>
-                                        <option value="Cozinha">Cozinha</option>
-                                        <option value="Banheiro">Banheiro</option>
-                                        <option value="Quarto">Quarto</option>
-                                        <option value="Sala">Sala</option>
-                                        <option value="Lavanderia">Lavanderia</option>
-                                        <option value="Decoração">Decoração</option>
-                                        <option value="Eletros">Eletros</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Link da Imagem</label>
-                                <input
-                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                    placeholder="https://..."
-                                    value={currentGift.image_url || ''}
-                                    onChange={e => setCurrentGift({ ...currentGift, image_url: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Link do Produto (Loja)</label>
-                                <input
-                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                    placeholder="https://..."
-                                    value={currentGift.product_link || ''}
-                                    onChange={e => setCurrentGift({ ...currentGift, product_link: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                                <textarea
-                                    rows={3}
-                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                    value={currentGift.description || ''}
-                                    onChange={e => setCurrentGift({ ...currentGift, description: e.target.value })}
-                                />
-                            </div>
-
-                            {/* Warning Fields */}
-                            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                                <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center gap-2">
-                                    <AlertCircle size={16} />
-                                    Alerta Técnico (Opcional)
-                                </h4>
-                                <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-xs font-semibold text-yellow-700 mb-1">Título do Aviso (ex: Voltagem)</label>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Preço (R$)</label>
                                         <input
-                                            className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
-                                            placeholder="Ex: Atenção à Voltagem 110v"
-                                            value={currentGift.warning_title || ''}
-                                            onChange={e => setCurrentGift({ ...currentGift, warning_title: e.target.value })}
+                                            type="number" step="0.01"
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                            value={currentGift.price}
+                                            onChange={e => setCurrentGift({ ...currentGift, price: e.target.value })}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-semibold text-yellow-700 mb-1">Mensagem Detalhada</label>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Qtd. Máxima</label>
                                         <input
-                                            className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
-                                            placeholder="Ex: Este item DEVE ser 110v"
-                                            value={currentGift.warning_message || ''}
-                                            onChange={e => setCurrentGift({ ...currentGift, warning_message: e.target.value })}
+                                            type="number" step="1" min="1"
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                            placeholder="1"
+                                            value={currentGift.max_quantity || ''}
+                                            onChange={e => setCurrentGift({ ...currentGift, max_quantity: e.target.value })}
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                                        <select
+                                            className="w-full px-4 py-2 border rounded-xl bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                            value={currentGift.category || ''}
+                                            onChange={e => setCurrentGift({ ...currentGift, category: e.target.value })}
+                                        >
+                                            <option value="">Geral (Sem Categoria)</option>
+                                            <option value="Cozinha">Cozinha</option>
+                                            <option value="Banheiro">Banheiro</option>
+                                            <option value="Quarto">Quarto</option>
+                                            <option value="Sala">Sala</option>
+                                            <option value="Lavanderia">Lavanderia</option>
+                                            <option value="Decoração">Decoração</option>
+                                            <option value="Eletros">Eletros</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="flex gap-3 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 font-medium transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="flex-1 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-bold shadow-lg shadow-slate-200 transition-colors"
-                                >
-                                    {loading ? 'Salvando...' : 'Salvar Item'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-            {/* Manage/Cancel Reservation Modal */}
-            {isManageModalOpen && selectedGiftForManagement && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsManageModalOpen(false)} />
-                    <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95">
-                        <h3 className="text-lg font-bold text-slate-800 mb-1">Gerenciar Reservas</h3>
-                        <p className="text-sm text-slate-500 mb-6">
-                            Item: <span className="font-semibold text-slate-700">{selectedGiftForManagement.name}</span>
-                        </p>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Link da Imagem</label>
+                                    <input
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                        placeholder="https://..."
+                                        value={currentGift.image_url || ''}
+                                        onChange={e => setCurrentGift({ ...currentGift, image_url: e.target.value })}
+                                    />
+                                </div>
 
-                        <div className="space-y-3 mb-6">
-                            {selectedGiftForManagement.reserved_by ? (
-                                selectedGiftForManagement.reserved_by.split(',').map((name, idx) => {
-                                    // Find reservation details for this name
-                                    // We loosely match by name. In a real app with IDs it would be better, but this works for now.
-                                    // reservations is an array of objects { name, method, date }
-                                    const cleanName = name.trim();
-                                    const resDetails = selectedGiftForManagement.reservations?.find(
-                                        r => r.name === cleanName
-                                    );
-                                    const method = resDetails?.method || 'hand'; // default to hand if not found
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Link do Produto (Loja)</label>
+                                    <input
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                        placeholder="https://..."
+                                        value={currentGift.product_link || ''}
+                                        onChange={e => setCurrentGift({ ...currentGift, product_link: e.target.value })}
+                                    />
+                                </div>
 
-                                    return (
-                                        <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
-                                                    {cleanName.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <span className="font-medium text-slate-700 block leading-tight">{cleanName}</span>
-                                                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                        {method === 'ship' ? (
-                                                            <>
-                                                                <Truck size={10} /> Enviar p/ casa
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <PartyPopper size={10} /> Levar no evento
-                                                            </>
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => handleRemoveSpecificReservation(cleanName)}
-                                                className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                title="Cancelar esta reserva"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                                    <textarea
+                                        rows={3}
+                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                        value={currentGift.description || ''}
+                                        onChange={e => setCurrentGift({ ...currentGift, description: e.target.value })}
+                                    />
+                                </div>
+
+                                {/* Warning Fields */}
+                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                                    <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center gap-2">
+                                        <AlertCircle size={16} />
+                                        Alerta Técnico (Opcional)
+                                    </h4>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-yellow-700 mb-1">Título do Aviso (ex: Voltagem)</label>
+                                            <input
+                                                className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
+                                                placeholder="Ex: Atenção à Voltagem 110v"
+                                                value={currentGift.warning_title || ''}
+                                                onChange={e => setCurrentGift({ ...currentGift, warning_title: e.target.value })}
+                                            />
                                         </div>
-                                    );
-                                })
-                            ) : (
-                                <p className="text-center text-slate-400 py-4 italic">Nenhuma reserva ativa.</p>
-                            )}
-                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-yellow-700 mb-1">Mensagem Detalhada</label>
+                                            <input
+                                                className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
+                                                placeholder="Ex: Este item DEVE ser 110v"
+                                                value={currentGift.warning_message || ''}
+                                                onChange={e => setCurrentGift({ ...currentGift, warning_message: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <button
-                            onClick={() => setIsManageModalOpen(false)}
-                            className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
-                        >
-                            Fechar
-                        </button>
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 font-medium transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="flex-1 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-bold shadow-lg shadow-slate-200 transition-colors"
+                                    >
+                                        {loading ? 'Salvando...' : 'Salvar Item'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
-    );
+                )}
+                {/* Manage/Cancel Reservation Modal */}
+                {isManageModalOpen && selectedGiftForManagement && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsManageModalOpen(false)} />
+                        <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95">
+                            <h3 className="text-lg font-bold text-slate-800 mb-1">Gerenciar Reservas</h3>
+                            <p className="text-sm text-slate-500 mb-6">
+                                Item: <span className="font-semibold text-slate-700">{selectedGiftForManagement.name}</span>
+                            </p>
+
+                            <div className="space-y-3 mb-6">
+                                {selectedGiftForManagement.reserved_by ? (
+                                    selectedGiftForManagement.reserved_by.split(',').map((name, idx) => {
+                                        // Find reservation details for this name
+                                        // We loosely match by name. In a real app with IDs it would be better, but this works for now.
+                                        // reservations is an array of objects { name, method, date }
+                                        const cleanName = name.trim();
+                                        const resDetails = selectedGiftForManagement.reservations?.find(
+                                            r => r.name === cleanName
+                                        );
+                                        const method = resDetails?.method || 'hand'; // default to hand if not found
+
+                                        return (
+                                            <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
+                                                        {cleanName.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-medium text-slate-700 block leading-tight">{cleanName}</span>
+                                                        <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                            {method === 'ship' ? (
+                                                                <>
+                                                                    <Truck size={10} /> Enviar p/ casa
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <PartyPopper size={10} /> Levar no evento
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRemoveSpecificReservation(cleanName)}
+                                                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                    title="Cancelar esta reserva"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-center text-slate-400 py-4 italic">Nenhuma reserva ativa.</p>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => setIsManageModalOpen(false)}
+                                className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+            );
 }
 // ... inside AdminPanel (Note: I need to do this carefully not to overwrite the whole file or break it)
 // IMPORTANT: I will do this in multiple small edits or one smart edit.
