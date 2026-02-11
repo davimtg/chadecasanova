@@ -60,8 +60,8 @@ export default function GiftCard({ gift, onClick }) {
                 <div className="pt-4 mt-auto">
                     {isReserved ? (
                         <button className="w-full py-2 bg-slate-100 text-slate-500 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors">
-                            <span className="md:hidden">Ver / Liberar</span>
-                            <span className="hidden md:inline">Ver Detalhes / Liberar</span>
+                            <span className="md:hidden">Ver</span>
+                            <span className="hidden md:inline">Ver Detalhes</span>
                         </button>
                     ) : (
                         <button className="w-full py-2 bg-rose-50 text-rose-600 rounded-lg text-sm font-bold hover:bg-rose-100 transition-colors border border-rose-100">
