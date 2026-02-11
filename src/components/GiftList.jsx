@@ -12,6 +12,10 @@ export default function GiftList() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all | up50 | 50to100 | 100to200 | above200
 
+    useEffect(() => {
+        console.log("DEBUG IMPORTED IMAGE:", nosImage);
+    }, []);
+
     const fetchGifts = async () => {
         setLoading(true);
         const { data, error } = await supabase
