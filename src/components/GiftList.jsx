@@ -4,7 +4,7 @@ import GiftCard from './GiftCard';
 import GiftModal from './GiftModal';
 import PixCard from './PixCard';
 import { Sparkles } from 'lucide-react';
-import nosImage from '../assets/nos.jpg';
+import nosImage from '../assets/foto_casal.jpg';
 
 export default function GiftList() {
     const [gifts, setGifts] = useState([]);
