@@ -4,9 +4,18 @@ import GiftCard from './GiftCard';
 import GiftModal from './GiftModal';
 import PixCard from './PixCard';
 import { Sparkles } from 'lucide-react';
+import nosImage from '../assets/nos.JPEG';
 
 export default function GiftList() {
     const [gifts, setGifts] = useState([]);
+    // ... (rest of imports/state)
+
+    // ... inside return ...
+    <img
+        src={nosImage}
+        alt="Nós"
+        className="rounded-full w-40 h-40 md:w-52 md:h-52 mx-auto object-cover border-4 border-white shadow-xl"
+    />
     const [selectedGift, setSelectedGift] = useState(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all | up50 | 50to100 | 100to200 | above200
