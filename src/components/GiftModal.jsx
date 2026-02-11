@@ -15,7 +15,10 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
 
     if (!gift) return null;
 
-    const isReserved = !!gift.reserved_by;
+    const maxQty = gift.max_quantity || 1;
+    const currentQty = gift.current_quantity || 0;
+    const isSoldOut = currentQty >= maxQty;
+    const isReserved = isSoldOut; // Treat as reserved if sold out
     const hasWarning = !!gift.warning_title;
 
     const handleStartReserve = () => {
@@ -43,7 +46,8 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
                 .rpc('reserve_gift', {
                     p_gift_id: gift.id,
                     p_guest_name: fullName,
-                    p_pin: 'no-pin'
+                    p_pin: 'no-pin',
+                    p_delivery_method: deliveryMethod
                 });
 
             if (rpcError) throw rpcError;
@@ -147,26 +151,33 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
                                 </a>
                             )}
 
-                            {isReserved ? (
+                            {isSoldOut ? (
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center space-y-3">
                                     <p className="text-slate-500 text-sm">
-                                        Este item já foi reservado.
+                                        Este item já foi totalmente reservado.
                                     </p>
                                     <button
                                         disabled
                                         className="w-full py-3 rounded-xl bg-slate-100 text-slate-400 font-medium cursor-not-allowed"
                                     >
-                                        Já Reservado
+                                        Esgotado
                                     </button>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={handleStartReserve}
-                                    className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-semibold text-white bg-orange-500 hover:bg-orange-600 active:scale-[0.98] transition-all shadow-md shadow-orange-200"
-                                >
-                                    <Heart size={20} fill="currentColor" className="text-white/20" />
-                                    Quero Presentear Este
-                                </button>
+                                <div>
+                                    {maxQty > 1 && (
+                                        <div className="mb-4 bg-orange-50 p-3 rounded-lg border border-orange-100 text-center text-sm text-orange-800">
+                                            Ainda restam <strong>{maxQty - currentQty}</strong> de <strong>{maxQty}</strong> unidades/cotas.
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={handleStartReserve}
+                                        className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-semibold text-white bg-orange-500 hover:bg-orange-600 active:scale-[0.98] transition-all shadow-md shadow-orange-200"
+                                    >
+                                        <Heart size={20} fill="currentColor" className="text-white/20" />
+                                        {maxQty > 1 ? 'Quero Presentear uma Unidade' : 'Quero Presentear Este'}
+                                    </button>
+                                </div>
                             )}
                         </div>
                     )}

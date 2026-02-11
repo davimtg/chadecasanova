@@ -63,7 +63,7 @@ export default function GiftList() {
             return 0;
         });
 
-    const CATEGORIES = ['Cozinha', 'Banheiro', 'Quarto', 'Sala', 'Lavanderia', 'Decoração', 'Eletrodomésticos', 'Geral', 'Limpeza'];
+    const CATEGORIES = ['Cozinha', 'Banheiro', 'Quarto', 'Sala', 'Lavanderia', 'Decoração', 'Eletrodomésticos', 'Limpeza', 'Geral'];
 
     return (
         <div className="min-h-screen bg-orange-50 font-sans text-slate-900 pb-20">
@@ -110,8 +110,9 @@ export default function GiftList() {
 
                             <div className="space-y-4 text-slate-600 text-base md:text-lg leading-relaxed px-2 md:px-10">
                                 <p>
-                                    Montamos essa lista com muito carinho para nos ajudar nessa nova etapa!
+                                    Caso queiram nos presentear para nos ajudar nessa nova etapa, montamos essa lista de itens com muito carinho.
                                 </p>
+
                                 <p>
                                     Os links e preços são apenas uma <span className="text-orange-500 font-medium">referência</span>. Sintam-se à vontade para comprar onde preferirem.
                                 </p>

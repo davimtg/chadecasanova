@@ -60,7 +60,9 @@ BEGIN
   UPDATE public.gifts
   SET 
     reserved_by = NULL,
-    reservation_pin = NULL
+    reservation_pin = NULL,
+    current_quantity = 0,
+    updated_at = now()
   WHERE id = p_id;
 
   RETURN true;
