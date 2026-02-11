@@ -3,19 +3,15 @@ import { supabase } from '../lib/supabaseClient';
 import GiftCard from './GiftCard';
 import GiftModal from './GiftModal';
 import PixCard from './PixCard';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Gift, X } from 'lucide-react';
 import nosImage from '../assets/foto_casal.jpg';
 
 export default function GiftList() {
     const [gifts, setGifts] = useState([]);
     const [selectedGift, setSelectedGift] = useState(null);
+    const [showPixModal, setShowPixModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all | up50 | 50to100 | 100to200 | above200
-
-    // DEBUGGER
-    useEffect(() => {
-        console.log("DEBUG: Image Path =", nosImage);
-    }, []);
 
     const fetchGifts = async () => {
         setLoading(true);
@@ -52,17 +48,7 @@ export default function GiftList() {
             <main className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
 
                 {/* HERO SECTION */}
-                <div className="text-center mb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
-                    {/* DEBUG BANNER - TEMPORARY */}
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-md mx-auto mb-4 font-mono text-xs break-all">
-                        <strong className="font-bold">DEBUG INFO:</strong>
-                        <br />
-                        Image Src: {nosImage}
-                        <br />
-                        Time: {new Date().toLocaleTimeString()}
-                    </div>
-
+                <div className="text-center mb-10 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="relative inline-block">
                         <img
                             src={nosImage}
@@ -84,7 +70,7 @@ export default function GiftList() {
                     </div>
 
                     {/* Welcome Text Card */}
-                    <div className="max-w-3xl mx-auto my-12 bg-white rounded-[2rem] p-10 md:p-14 shadow-[0_20px_50px_rgba(255,237,213,0.5)] border border-orange-50 text-center relative">
+                    <div className="max-w-3xl mx-auto mt-12 mb-8 bg-white rounded-[2rem] p-8 md:p-14 shadow-[0_20px_50px_rgba(255,237,213,0.5)] border border-orange-50 text-center relative">
 
                         {/* Ícone de Coração Flutuante */}
                         <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white p-4 rounded-full shadow-md border border-orange-50">
@@ -93,65 +79,73 @@ export default function GiftList() {
                             </svg>
                         </div>
 
-                        <div className="mt-6">
-                            <h2 className="text-3xl font-bold text-slate-800 mb-8">
+                        <div className="mt-4">
+                            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-6">
                                 Bem-vindos à nossa lista!
                             </h2>
 
-                            <div className="space-y-6 text-slate-600 text-lg leading-relaxed px-4 md:px-10">
+                            <div className="space-y-4 text-slate-600 text-base md:text-lg leading-relaxed px-2 md:px-10">
                                 <p>
                                     Montamos essa lista com muito carinho para nos ajudar nessa nova etapa!
                                 </p>
                                 <p>
-                                    Os links e preços que aparecem aqui são apenas uma <span className="text-orange-500 font-medium">referência</span>. Sintam-se totalmente à vontade para comprar em outra loja, outra marca ou aproveitar promoções.
+                                    Os links e preços são apenas uma <span className="text-orange-500 font-medium">referência</span>. Sintam-se à vontade para comprar onde preferirem.
                                 </p>
                             </div>
+                        </div>
 
-                            <div className="mt-12 inline-flex bg-orange-50/50 px-8 py-5 rounded-2xl border border-orange-100 text-orange-900 items-center justify-center mx-auto">
-                                <span className="text-lg font-semibold">
-                                    💡 Dica de ouro: Lembre-se de clicar em <strong className="text-orange-600 underline decoration-orange-300 underline-offset-4">'Reservar'</strong> aqui no site para evitar presentes repetidos!
-                                </span>
-                            </div>
+                        {/* Pix Call to Action inside the Welcome Card for better flow */}
+                        <div className="mt-10 pt-8 border-t border-orange-100 flex flex-col items-center gap-4">
+                            <p className="text-slate-500 text-sm font-medium">Prefere ajudar com algum valor livre?</p>
+                            <button
+                                onClick={() => setShowPixModal(true)}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+                            >
+                                <Gift size={20} />
+                                Quero presentear via Pix
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {/* Filter Pills */}
-                <div className="flex flex-wrap justify-center gap-3 mb-10 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
-                    {[
-                        { id: 'all', label: 'Todos' },
-                        { id: 'up50', label: 'Até R$ 50' },
-                        { id: '50to100', label: 'R$ 50 - R$ 100' },
-                        { id: '100to200', label: 'R$ 100 - R$ 200' },
-                        { id: 'above200', label: 'Acima de R$ 200' },
-                    ].map(opt => (
-                        <button
-                            key={opt.id}
-                            onClick={() => setFilter(opt.id)}
-                            className={`
-                                px-4 py-2 rounded-full text-sm font-medium transition-all
-                                ${filter === opt.id
-                                    ? 'bg-orange-400 text-white shadow-md scale-105'
-                                    : 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-                                }
-                            `}
-                        >
-                            {opt.label}
-                        </button>
-                    ))}
+                <div className="sticky top-4 z-40 py-2 -mx-4 px-4 overflow-x-auto no-scrollbar flex justify-start md:justify-center gap-2 mb-8 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 bg-orange-50/95 backdrop-blur-sm md:bg-transparent">
+                    <div className="flex gap-2 mx-auto">
+                        {[
+                            { id: 'all', label: 'Todos' },
+                            { id: 'up50', label: 'Até R$ 50' },
+                            { id: '50to100', label: 'R$ 50 - R$ 100' },
+                            { id: '100to200', label: 'R$ 100 - R$ 200' },
+                            { id: 'above200', label: '+ R$ 200' },
+                        ].map(opt => (
+                            <button
+                                key={opt.id}
+                                onClick={() => setFilter(opt.id)}
+                                className={`
+                                    whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all border
+                                    ${filter === opt.id
+                                        ? 'bg-orange-500 text-white border-orange-500 shadow-md scale-105'
+                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-orange-50 hover:border-orange-200'
+                                    }
+                                `}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* CONTENT GRID */}
+                {/* 
+                   Mobile: grid-cols-2 (2 items per row)
+                   Gap: smaller gap-3 on mobile to fit items better 
+                */}
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8 auto-rows-fr">
-
-                        {/* Always show PixCard first or in a prominent spot if filter is 'all' or implies money */}
-                        {filter === 'all' && <PixCard />}
-
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-8 auto-rows-fr pb-10">
                         {filteredGifts.map(gift => (
                             <GiftCard
                                 key={gift.id}
@@ -163,18 +157,35 @@ export default function GiftList() {
                 )}
             </main>
 
-            {/* MODAL */}
+            {/* MODAL - Gift Details */}
             {selectedGift && (
                 <GiftModal
                     gift={selectedGift}
                     onClose={() => setSelectedGift(null)}
                     onReserveSuccess={() => {
-                        // Refresh list to show updated status
                         fetchGifts();
-                        // Do not close modal immediately if we want to show success message, 
-                        // logic is handled inside GiftModal (step=success)
                     }}
                 />
+            )}
+
+            {/* MODAL - Pix */}
+            {showPixModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowPixModal(false)} />
+                    <div className="relative w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowPixModal(false)}
+                            className="absolute top-3 right-3 z-10 p-2 bg-white/80 hover:bg-white rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="p-1">
+                            <PixCard />
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
