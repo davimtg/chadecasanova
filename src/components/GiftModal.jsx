@@ -90,7 +90,7 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
                             <div className="absolute inset-0 bg-black/10 flex items-end p-4">
                                 <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-semibold shadow-sm flex items-center gap-2">
                                     <Heart size={14} fill="currentColor" />
-                                    Reservado por {gift.reserved_by}
+                                    Indisponível / Reservado
                                 </span>
                             </div>
                         )}

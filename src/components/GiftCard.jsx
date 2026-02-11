@@ -39,8 +39,8 @@ export default function GiftCard({ gift, onClick }) {
                         <div className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full font-medium text-sm flex items-center gap-2 shadow-sm">
                             <CheckCircle2 size={16} />
                             <div className="text-center leading-tight">
-                                <span className="block font-bold">Já Ganhei</span>
-                                <span className="text-xs opacity-75">de {gift.reserved_by}</span>
+                                <span className="block font-bold">Já Ganhei! ❤️</span>
+                                <span className="text-xs opacity-75">Obrigado!</span>
                             </div>
                         </div>
                     </div>

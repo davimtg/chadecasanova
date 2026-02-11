@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper } from 'lucide-react';
+import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet } from 'lucide-react';
 
 export default function AdminPanel({ onClose }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
     const [gifts, setGifts] = useState([]);
+    const [pixDonations, setPixDonations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'available', 'reserved'
@@ -24,18 +25,46 @@ export default function AdminPanel({ onClose }) {
 
     const fetchGifts = async () => {
         setLoading(true);
-        const { data, error } = await supabase
+        const { data: giftsData, error: giftsError } = await supabase
             .from('gifts')
             .select('*')
             .order('id', { ascending: true });
 
-        if (data) setGifts(data);
+        if (giftsData) setGifts(giftsData);
+
+        // Fetch Pix Donations
+        const { data: pixData, error: pixError } = await supabase
+            .rpc('admin_get_pix_donations', { p_secret_key: password });
+
+        if (pixData) setPixDonations(pixData);
+
         setLoading(false);
+    };
+
+    const handleUpdatePixStatus = async (donation) => {
+        const newStatus = donation.status === 'received' ? 'pending' : 'received';
+        const confirmMsg = newStatus === 'received'
+            ? `Confirmar recebimento de R$ ${donation.amount} de ${donation.donor_name}?`
+            : `Marcar como pendente a doação de ${donation.donor_name}?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        const { error } = await supabase.rpc('admin_update_pix_status', {
+            p_id: donation.id,
+            p_status: newStatus,
+            p_secret_key: password
+        });
+
+        if (error) {
+            alert('Erro: ' + error.message);
+        } else {
+            fetchGifts(); // Refresh lists
+        }
     };
 
     const handleLogin = (e) => {
         e.preventDefault();
-        if (password === 'admin123') {
+        if (password === 'davilarimo') {
             setIsAuthenticated(true);
             fetchGifts();
         } else {
@@ -311,6 +340,14 @@ export default function AdminPanel({ onClose }) {
                             <p className="text-xs md:text-sm text-rose-600 font-medium mb-1">Esgotados/Reserv.</p>
                             <p className="text-2xl md:text-3xl font-bold text-rose-700">{reservedItems}</p>
                         </div>
+                        <div className="bg-white p-4 rounded-xl border border-orange-100 bg-orange-50/50 shadow-sm text-center col-span-3 md:col-span-1">
+                            <p className="text-xs md:text-sm text-orange-600 font-medium mb-1 flex items-center justify-center gap-1">
+                                <Wallet size={14} /> Total em Pix
+                            </p>
+                            <p className="text-2xl md:text-3xl font-bold text-orange-700">
+                                R$ {pixDonations.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0).toFixed(2).replace('.', ',')}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Status Filters */}
@@ -514,6 +551,75 @@ export default function AdminPanel({ onClose }) {
                                     </td>
                                 </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* PIX DONATIONS SECTION */}
+            <div className="max-w-6xl mx-auto px-4 md:px-8 pb-24">
+                <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Wallet className="text-orange-500" />
+                    Extrato de Pix (Intenções)
+                </h2>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table className="w-full text-left text-sm text-slate-600">
+                        <thead className="bg-orange-50 text-orange-900 font-semibold border-b border-orange-100">
+                            <tr>
+                                <th className="p-4">Data</th>
+                                <th className="p-4">Nome</th>
+                                <th className="p-4">Mensagem</th>
+                                <th className="p-4 text-right">Valor</th>
+                                <th className="p-4 text-center">Status</th>
+                                <th className="p-4 text-right">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {pixDonations.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="p-8 text-center text-slate-400 italic">
+                                        Nenhuma doação registrada ainda.
+                                    </td>
+                                </tr>
+                            ) : (
+                                pixDonations.map(pix => (
+                                    <tr key={pix.id} className="hover:bg-slate-50 transition-colors">
+                                        <td className="p-4 text-slate-500">
+                                            {new Date(pix.created_at).toLocaleDateString('pt-BR')} <br />
+                                            <span className="text-xs">{new Date(pix.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        </td>
+                                        <td className="p-4 font-bold text-slate-700">{pix.donor_name}</td>
+                                        <td className="p-4 italic text-slate-500">"{pix.message || '-'}"</td>
+                                        <td className="p-4 text-right font-bold text-emerald-600">
+                                            R$ {parseFloat(pix.amount).toFixed(2).replace('.', ',')}
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            {pix.status === 'received' ? (
+                                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center justify-center gap-1 w-fit mx-auto">
+                                                    <CheckCircle2 size={12} /> Recebido
+                                                </span>
+                                            ) : (
+                                                <span className="px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 flex items-center justify-center gap-1 w-fit mx-auto">
+                                                    <AlertCircle size={12} /> Pendente
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <button
+                                                onClick={() => handleUpdatePixStatus(pix)}
+                                                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-colors
+                                                    ${pix.status === 'received'
+                                                        ? 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200'}
+                                                `}
+                                            >
+                                                {pix.status === 'received' ? 'Desmarcar' : 'Confirmar Pix'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -727,3 +833,16 @@ export default function AdminPanel({ onClose }) {
         </div>
     );
 }
+// ... inside AdminPanel (Note: I need to do this carefully not to overwrite the whole file or break it)
+// IMPORTANT: I will do this in multiple small edits or one smart edit.
+// Since the file is large, I'll use multi_replace.
+
+// I need to:
+// 1. Add [pixDonations, setPixDonations] state
+// 2. Fetch pix donations in fetchGifts or fetchAll
+// 3. Add 'Wallet' icon import
+// 4. Render the Pix section below the main table
+
+// Let's start with import and state.
+// I already added 'Wallet' in PixCard, but not AdminPanel.
+// AdminPanel needs Wallet icon.
