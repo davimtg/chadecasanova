@@ -8,14 +8,6 @@ import nosImage from '../assets/nos.JPEG';
 
 export default function GiftList() {
     const [gifts, setGifts] = useState([]);
-    // ... (rest of imports/state)
-
-    // ... inside return ...
-    <img
-        src={nosImage}
-        alt="Nós"
-        className="rounded-full w-40 h-40 md:w-52 md:h-52 mx-auto object-cover border-4 border-white shadow-xl"
-    />
     const [selectedGift, setSelectedGift] = useState(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all | up50 | 50to100 | 100to200 | above200
@@ -35,13 +27,10 @@ export default function GiftList() {
         fetchGifts();
     }, []);
 
-    // Also listen for real-time updates could be nice, but simple fetch on modal close is safer for now.
-
     const filteredGifts = gifts.filter(gift => {
         if (filter === 'all') return true;
 
         // Remove R$ if present (though database should be numeric really, but handled just in case)
-        // Adjust based on your DB. Assuming 'price' is numeric or text-numeric.
         const price = parseFloat(gift.price || 0);
 
         if (filter === 'up50') return price <= 50;
@@ -61,7 +50,7 @@ export default function GiftList() {
                 <div className="text-center mb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
                     <div className="relative inline-block">
                         <img
-                            src="src/assets/nos.JPEG"
+                            src={nosImage}
                             alt="Nós"
                             className="rounded-full w-40 h-40 md:w-52 md:h-52 mx-auto object-cover border-4 border-white shadow-xl"
                         />
