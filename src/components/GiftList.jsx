@@ -12,8 +12,9 @@ export default function GiftList() {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all | up50 | 50to100 | 100to200 | above200
 
+    // DEBUGGER
     useEffect(() => {
-        console.log("DEBUG IMPORTED IMAGE:", nosImage);
+        console.log("DEBUG: Image Path =", nosImage);
     }, []);
 
     const fetchGifts = async () => {
@@ -52,6 +53,16 @@ export default function GiftList() {
 
                 {/* HERO SECTION */}
                 <div className="text-center mb-16 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+
+                    {/* DEBUG BANNER - TEMPORARY */}
+                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-md mx-auto mb-4 font-mono text-xs break-all">
+                        <strong className="font-bold">DEBUG INFO:</strong>
+                        <br />
+                        Image Src: {nosImage}
+                        <br />
+                        Time: {new Date().toLocaleTimeString()}
+                    </div>
+
                     <div className="relative inline-block">
                         <img
                             src={nosImage}
