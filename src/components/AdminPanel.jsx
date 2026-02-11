@@ -907,18 +907,6 @@ export default function AdminPanel({ onClose }) {
                     </div>
                 )}
             </div>
-            );
+        </div>
+    );
 }
-// ... inside AdminPanel (Note: I need to do this carefully not to overwrite the whole file or break it)
-// IMPORTANT: I will do this in multiple small edits or one smart edit.
-// Since the file is large, I'll use multi_replace.
-
-// I need to:
-// 1. Add [pixDonations, setPixDonations] state
-// 2. Fetch pix donations in fetchGifts or fetchAll
-// 3. Add 'Wallet' icon import
-// 4. Render the Pix section below the main table
-
-// Let's start with import and state.
-// I already added 'Wallet' in PixCard, but not AdminPanel.
-// AdminPanel needs Wallet icon.
