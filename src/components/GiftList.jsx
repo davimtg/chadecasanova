@@ -63,7 +63,7 @@ export default function GiftList() {
             return 0;
         });
 
-    const CATEGORIES = ['Cozinha', 'Banheiro', 'Quarto', 'Sala', 'Lavanderia', 'Decoração', 'Eletros', 'Geral'];
+    const CATEGORIES = ['Cozinha', 'Banheiro', 'Quarto', 'Sala', 'Lavanderia', 'Decoração', 'Eletrodomésticos', 'Geral', 'Limpeza'];
 
     return (
         <div className="min-h-screen bg-orange-50 font-sans text-slate-900 pb-20">
