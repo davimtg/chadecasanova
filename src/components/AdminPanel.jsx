@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet } from 'lucide-react';
+import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2 } from 'lucide-react';
 
 export default function AdminPanel({ onClose }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,6 +22,37 @@ export default function AdminPanel({ onClose }) {
     // Management Modal State
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [selectedGiftForManagement, setSelectedGiftForManagement] = useState(null);
+
+    const handleAutoFill = async () => {
+        const url = currentGift.product_link;
+        if (!url) {
+            alert('Cole o link do produto primeiro!');
+            return;
+        }
+
+        setLoading(true);
+        const { data, error } = await supabase.functions.invoke('fetch-metadata', {
+            body: { url }
+        });
+
+        if (error) {
+            console.error(error);
+            alert('Erro ao buscar dados: ' + error.message);
+        } else if (data) {
+            setCurrentGift(prev => ({
+                ...prev,
+                name: data.title || prev.name,
+                description: data.description || prev.description,
+                image_url: data.image || prev.image_url,
+                // Only update price if found and valid
+                price: data.price || prev.price
+            }));
+            alert('Dados preenchidos com sucesso! ✨');
+        } else {
+            alert('Não foi possível encontrar dados nesse link.');
+        }
+        setLoading(false);
+    };
 
     const fetchGifts = async () => {
         setLoading(true);
@@ -772,13 +803,25 @@ export default function AdminPanel({ onClose }) {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Link do Produto (Loja)</label>
-                                    <input
-                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        placeholder="https://..."
-                                        value={currentGift.product_link || ''}
-                                        onChange={e => setCurrentGift({ ...currentGift, product_link: e.target.value })}
-                                    />
+                                    <div className="flex items-end gap-2">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Link do Produto (Loja)</label>
+                                            <input
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                                placeholder="https://..."
+                                                value={currentGift.product_link || ''}
+                                                onChange={e => setCurrentGift({ ...currentGift, product_link: e.target.value })}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleAutoFill}
+                                            title="Preencher automaticamente (Beta)"
+                                            className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-100 transition-colors mb-[1px]"
+                                        >
+                                            <Wand2 size={24} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div>
