@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2 } from 'lucide-react';
+import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2, Users } from 'lucide-react';
 
 export default function AdminPanel({ onClose }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [password, setPassword] = useState('');
     const [gifts, setGifts] = useState([]);
     const [pixDonations, setPixDonations] = useState([]);
+    const [rsvps, setRsvps] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'available', 'reserved'
@@ -68,6 +69,14 @@ export default function AdminPanel({ onClose }) {
             .rpc('admin_get_pix_donations', { p_secret_key: password });
 
         if (pixData) setPixDonations(pixData);
+
+        // Fetch REVPS
+        const { data: rsvpsData, error: rsvpsError } = await supabase
+            .from('rsvps')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (rsvpsData) setRsvps(rsvpsData);
 
         setLoading(false);
     };
@@ -295,6 +304,21 @@ export default function AdminPanel({ onClose }) {
         }
     };
 
+    const deleteRsvp = async (id, name) => {
+        if (!confirm(`Remover a confirmação de "${name}"?`)) return;
+
+        const { error } = await supabase
+            .from('rsvps')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert('Erro ao excluir: ' + error.message);
+        } else {
+            fetchGifts();
+        }
+    };
+
     const handleSave = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -376,7 +400,7 @@ export default function AdminPanel({ onClose }) {
                     </div>
 
                     {/* Stats Dashboard */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
                         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
                             <p className="text-xs md:text-sm text-slate-500 font-medium mb-1">Total de Itens</p>
                             <p className="text-2xl md:text-3xl font-bold text-slate-800">{totalItems}</p>
@@ -402,6 +426,15 @@ export default function AdminPanel({ onClose }) {
                             </p>
                             <p className="text-xl md:text-2xl font-bold text-orange-700 truncate">
                                 R$ {pixDonations.filter(p => p.status === 'received').reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                        </div>
+                        {/* RSVP Stats */}
+                        <div className="bg-white p-4 rounded-xl border border-purple-100 bg-purple-50/50 shadow-sm text-center">
+                            <p className="text-xs md:text-sm text-purple-600 font-medium mb-1 flex items-center justify-center gap-1">
+                                <Users size={14} /> Presenças
+                            </p>
+                            <p className="text-xl md:text-2xl font-bold text-purple-700">
+                                {rsvps.length}
                             </p>
                         </div>
                     </div>
@@ -610,10 +643,58 @@ export default function AdminPanel({ onClose }) {
                         </tbody>
                     </table>
                 </div>
+            </div >
+
+            {/* RSVP LIST SECTION */}
+            <div className="max-w-6xl mx-auto px-4 md:px-8 pb-12">
+                <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <Users className="text-purple-600" />
+                    Lista de Convidados ({rsvps.length})
+                </h2>
+
+                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    {rsvps.length === 0 ? (
+                        <p className="p-8 text-center text-slate-400 italic">
+                            Nenhuma confirmação ainda.
+                        </p>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-purple-50 text-purple-900 font-semibold border-b border-purple-100">
+                                    <tr>
+                                        <th className="p-4">Data</th>
+                                        <th className="p-4">Nome</th>
+                                        <th className="p-4 text-right">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {rsvps.map(rsvp => (
+                                        <tr key={rsvp.id} className="hover:bg-slate-50 transition-colors">
+                                            <td className="p-4 text-slate-500 whitespace-nowrap w-40">
+                                                {new Date(rsvp.created_at).toLocaleDateString('pt-BR')} <br />
+                                                <span className="text-xs">{new Date(rsvp.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                            </td>
+                                            <td className="p-4 font-bold text-slate-700">{rsvp.full_name}</td>
+                                            <td className="p-4 text-right">
+                                                <button
+                                                    onClick={() => deleteRsvp(rsvp.id, rsvp.full_name)}
+                                                    className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors"
+                                                    title="Excluir"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* PIX DONATIONS SECTION */}
-            <div className="max-w-6xl mx-auto px-4 md:px-8 pb-24">
+            < div className="max-w-6xl mx-auto px-4 md:px-8 pb-24" >
                 <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <Wallet className="text-orange-500" />
                     Extrato de Pix (Intenções)
@@ -733,223 +814,227 @@ export default function AdminPanel({ onClose }) {
                 </div>
 
                 {/* Edit/Create Modal */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-                        <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-                            <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                                {modalMode === 'create' ? <Plus className="text-rose-500" /> : <Edit2 className="text-indigo-500" />}
-                                {modalMode === 'create' ? 'Novo Item' : 'Editar Item'}
-                            </h3>
+                {
+                    isModalOpen && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+                            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
+                                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                    {modalMode === 'create' ? <Plus className="text-rose-500" /> : <Edit2 className="text-indigo-500" />}
+                                    {modalMode === 'create' ? 'Novo Item' : 'Editar Item'}
+                                </h3>
 
-                            <form onSubmit={handleSave} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Item</label>
-                                    <input
-                                        required
-                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        value={currentGift.name}
-                                        onChange={e => setCurrentGift({ ...currentGift, name: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
+                                <form onSubmit={handleSave} className="space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Preço (R$)</label>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Nome do Item</label>
                                         <input
-                                            type="number" step="0.01"
+                                            required
                                             className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                            value={currentGift.price}
-                                            onChange={e => setCurrentGift({ ...currentGift, price: e.target.value })}
+                                            value={currentGift.name}
+                                            onChange={e => setCurrentGift({ ...currentGift, name: e.target.value })}
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Qtd. Máxima</label>
-                                        <input
-                                            type="number" step="1" min="1"
-                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                            placeholder="1"
-                                            value={currentGift.max_quantity || ''}
-                                            onChange={e => setCurrentGift({ ...currentGift, max_quantity: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
-                                        <select
-                                            className="w-full px-4 py-2 border rounded-xl bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                            value={currentGift.category || ''}
-                                            onChange={e => setCurrentGift({ ...currentGift, category: e.target.value })}
-                                        >
-                                            <option value="">Geral (Sem Categoria)</option>
-                                            <option value="Cozinha">Cozinha</option>
-                                            <option value="Banheiro">Banheiro</option>
-                                            <option value="Quarto">Quarto</option>
-                                            <option value="Sala">Sala</option>
-                                            <option value="Lavanderia">Lavanderia</option>
-                                            <option value="Decoração">Decoração</option>
-                                            <option value="Eletros">Eletros</option>
-                                        </select>
-                                    </div>
-                                </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Link da Imagem</label>
-                                    <input
-                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        placeholder="https://..."
-                                        value={currentGift.image_url || ''}
-                                        onChange={e => setCurrentGift({ ...currentGift, image_url: e.target.value })}
-                                    />
-                                </div>
-
-                                <div>
-                                    <div className="flex items-end gap-2">
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Link do Produto (Loja)</label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Preço (R$)</label>
                                             <input
+                                                type="number" step="0.01"
                                                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                                placeholder="https://..."
-                                                value={currentGift.product_link || ''}
-                                                onChange={e => setCurrentGift({ ...currentGift, product_link: e.target.value })}
+                                                value={currentGift.price}
+                                                onChange={e => setCurrentGift({ ...currentGift, price: e.target.value })}
                                             />
                                         </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Qtd. Máxima</label>
+                                            <input
+                                                type="number" step="1" min="1"
+                                                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                                placeholder="1"
+                                                value={currentGift.max_quantity || ''}
+                                                onChange={e => setCurrentGift({ ...currentGift, max_quantity: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Categoria</label>
+                                            <select
+                                                className="w-full px-4 py-2 border rounded-xl bg-white focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                                value={currentGift.category || ''}
+                                                onChange={e => setCurrentGift({ ...currentGift, category: e.target.value })}
+                                            >
+                                                <option value="">Geral (Sem Categoria)</option>
+                                                <option value="Cozinha">Cozinha</option>
+                                                <option value="Banheiro">Banheiro</option>
+                                                <option value="Quarto">Quarto</option>
+                                                <option value="Sala">Sala</option>
+                                                <option value="Lavanderia">Lavanderia</option>
+                                                <option value="Decoração">Decoração</option>
+                                                <option value="Eletros">Eletros</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Link da Imagem</label>
+                                        <input
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                            placeholder="https://..."
+                                            value={currentGift.image_url || ''}
+                                            onChange={e => setCurrentGift({ ...currentGift, image_url: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-end gap-2">
+                                            <div className="flex-1">
+                                                <label className="block text-sm font-medium text-slate-700 mb-1">Link do Produto (Loja)</label>
+                                                <input
+                                                    className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                                    placeholder="https://..."
+                                                    value={currentGift.product_link || ''}
+                                                    onChange={e => setCurrentGift({ ...currentGift, product_link: e.target.value })}
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleAutoFill}
+                                                title="Preencher automaticamente (Beta)"
+                                                className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-100 transition-colors mb-[1px]"
+                                            >
+                                                <Wand2 size={24} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
+                                        <textarea
+                                            rows={3}
+                                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
+                                            value={currentGift.description || ''}
+                                            onChange={e => setCurrentGift({ ...currentGift, description: e.target.value })}
+                                        />
+                                    </div>
+
+                                    {/* Warning Fields */}
+                                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
+                                        <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center gap-2">
+                                            <AlertCircle size={16} />
+                                            Alerta Técnico (Opcional)
+                                        </h4>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-yellow-700 mb-1">Título do Aviso (ex: Voltagem)</label>
+                                                <input
+                                                    className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
+                                                    placeholder="Ex: Atenção à Voltagem 110v"
+                                                    value={currentGift.warning_title || ''}
+                                                    onChange={e => setCurrentGift({ ...currentGift, warning_title: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-yellow-700 mb-1">Mensagem Detalhada</label>
+                                                <input
+                                                    className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
+                                                    placeholder="Ex: Este item DEVE ser 110v"
+                                                    value={currentGift.warning_message || ''}
+                                                    onChange={e => setCurrentGift({ ...currentGift, warning_message: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
                                         <button
                                             type="button"
-                                            onClick={handleAutoFill}
-                                            title="Preencher automaticamente (Beta)"
-                                            className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-xl border border-indigo-100 hover:bg-indigo-100 transition-colors mb-[1px]"
+                                            onClick={() => setIsModalOpen(false)}
+                                            className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 font-medium transition-colors"
                                         >
-                                            <Wand2 size={24} />
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="flex-1 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-bold shadow-lg shadow-slate-200 transition-colors"
+                                        >
+                                            {loading ? 'Salvando...' : 'Salvar Item'}
                                         </button>
                                     </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Descrição</label>
-                                    <textarea
-                                        rows={3}
-                                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-orange-100 focus:border-orange-400 outline-none transition-all"
-                                        value={currentGift.description || ''}
-                                        onChange={e => setCurrentGift({ ...currentGift, description: e.target.value })}
-                                    />
-                                </div>
-
-                                {/* Warning Fields */}
-                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
-                                    <h4 className="text-sm font-bold text-yellow-800 mb-3 flex items-center gap-2">
-                                        <AlertCircle size={16} />
-                                        Alerta Técnico (Opcional)
-                                    </h4>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-yellow-700 mb-1">Título do Aviso (ex: Voltagem)</label>
-                                            <input
-                                                className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
-                                                placeholder="Ex: Atenção à Voltagem 110v"
-                                                value={currentGift.warning_title || ''}
-                                                onChange={e => setCurrentGift({ ...currentGift, warning_title: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-yellow-700 mb-1">Mensagem Detalhada</label>
-                                            <input
-                                                className="w-full px-3 py-2 border border-yellow-200 rounded-lg text-sm focus:ring-2 focus:ring-yellow-200 outline-none"
-                                                placeholder="Ex: Este item DEVE ser 110v"
-                                                value={currentGift.warning_message || ''}
-                                                onChange={e => setCurrentGift({ ...currentGift, warning_message: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3 pt-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 font-medium transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="flex-1 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 font-bold shadow-lg shadow-slate-200 transition-colors"
-                                    >
-                                        {loading ? 'Salvando...' : 'Salvar Item'}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-                {/* Manage/Cancel Reservation Modal */}
-                {isManageModalOpen && selectedGiftForManagement && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsManageModalOpen(false)} />
-                        <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95">
-                            <h3 className="text-lg font-bold text-slate-800 mb-1">Gerenciar Reservas</h3>
-                            <p className="text-sm text-slate-500 mb-6">
-                                Item: <span className="font-semibold text-slate-700">{selectedGiftForManagement.name}</span>
-                            </p>
-
-                            <div className="space-y-3 mb-6">
-                                {selectedGiftForManagement.reserved_by ? (
-                                    selectedGiftForManagement.reserved_by.split(',').map((name, idx) => {
-                                        // Find reservation details for this name
-                                        // We loosely match by name. In a real app with IDs it would be better, but this works for now.
-                                        // reservations is an array of objects { name, method, date }
-                                        const cleanName = name.trim();
-                                        const resDetails = selectedGiftForManagement.reservations?.find(
-                                            r => r.name === cleanName
-                                        );
-                                        const method = resDetails?.method || 'hand'; // default to hand if not found
-
-                                        return (
-                                            <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
-                                                        {cleanName.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <span className="font-medium text-slate-700 block leading-tight">{cleanName}</span>
-                                                        <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                                                            {method === 'ship' ? (
-                                                                <>
-                                                                    <Truck size={10} /> Enviar p/ casa
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <PartyPopper size={10} /> Levar no evento
-                                                                </>
-                                                            )}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleRemoveSpecificReservation(cleanName)}
-                                                    className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                                    title="Cancelar esta reserva"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <p className="text-center text-slate-400 py-4 italic">Nenhuma reserva ativa.</p>
-                                )}
+                                </form>
                             </div>
-
-                            <button
-                                onClick={() => setIsManageModalOpen(false)}
-                                className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
-                            >
-                                Fechar
-                            </button>
                         </div>
-                    </div>
-                )}
-            </div>
-        </div>
+                    )
+                }
+                {/* Manage/Cancel Reservation Modal */}
+                {
+                    isManageModalOpen && selectedGiftForManagement && (
+                        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsManageModalOpen(false)} />
+                            <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 animate-in fade-in zoom-in-95">
+                                <h3 className="text-lg font-bold text-slate-800 mb-1">Gerenciar Reservas</h3>
+                                <p className="text-sm text-slate-500 mb-6">
+                                    Item: <span className="font-semibold text-slate-700">{selectedGiftForManagement.name}</span>
+                                </p>
+
+                                <div className="space-y-3 mb-6">
+                                    {selectedGiftForManagement.reserved_by ? (
+                                        selectedGiftForManagement.reserved_by.split(',').map((name, idx) => {
+                                            // Find reservation details for this name
+                                            // We loosely match by name. In a real app with IDs it would be better, but this works for now.
+                                            // reservations is an array of objects { name, method, date }
+                                            const cleanName = name.trim();
+                                            const resDetails = selectedGiftForManagement.reservations?.find(
+                                                r => r.name === cleanName
+                                            );
+                                            const method = resDetails?.method || 'hand'; // default to hand if not found
+
+                                            return (
+                                                <div key={idx} className="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs">
+                                                            {cleanName.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <span className="font-medium text-slate-700 block leading-tight">{cleanName}</span>
+                                                            <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                                                                {method === 'ship' ? (
+                                                                    <>
+                                                                        <Truck size={10} /> Enviar p/ casa
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <PartyPopper size={10} /> Levar no evento
+                                                                    </>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleRemoveSpecificReservation(cleanName)}
+                                                        className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                        title="Cancelar esta reserva"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <p className="text-center text-slate-400 py-4 italic">Nenhuma reserva ativa.</p>
+                                    )}
+                                </div>
+
+                                <button
+                                    onClick={() => setIsManageModalOpen(false)}
+                                    className="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors"
+                                >
+                                    Fechar
+                                </button>
+                            </div>
+                        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 }

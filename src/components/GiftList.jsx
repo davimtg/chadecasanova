@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import GiftCard from './GiftCard';
 import GiftModal from './GiftModal';
+import EventInfo from './EventInfo';
 import PixCard from './PixCard';
 import { Sparkles, Gift, X } from 'lucide-react';
 import nosImage from '../assets/foto_casal.jpg';
@@ -132,6 +133,9 @@ export default function GiftList() {
                         </div>
                     </div>
                 </div>
+
+                {/* EVENT INFO & RSVP */}
+                <EventInfo />
 
                 {/* --- FILTERS & SORTING SECTION --- */}
                 <div className="mb-8 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
