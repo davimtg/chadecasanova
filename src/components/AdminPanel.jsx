@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2, Users } from 'lucide-react';
+import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2, Users, Eye } from 'lucide-react';
 
 export default function AdminPanel({ onClose }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -8,6 +8,7 @@ export default function AdminPanel({ onClose }) {
     const [gifts, setGifts] = useState([]);
     const [pixDonations, setPixDonations] = useState([]);
     const [rsvps, setRsvps] = useState([]);
+    const [accessLogs, setAccessLogs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'available', 'reserved'
@@ -77,6 +78,15 @@ export default function AdminPanel({ onClose }) {
             .order('created_at', { ascending: false });
 
         if (rsvpsData) setRsvps(rsvpsData);
+
+        // Fetch Access Logs
+        const { data: logsData } = await supabase
+            .from('access_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (logsData) setAccessLogs(logsData);
 
         setLoading(false);
     };
@@ -811,6 +821,55 @@ export default function AdminPanel({ onClose }) {
                             )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* ACCESS LOGS SECTION */}
+                <div className="max-w-6xl mx-auto px-4 md:px-8 pb-24">
+                    <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <Eye className="text-blue-500" />
+                        Logs de Acesso (Últimos 100)
+                    </h2>
+
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="max-h-96 overflow-y-auto">
+                            <table className="w-full text-left text-sm text-slate-600">
+                                <thead className="bg-slate-50 text-slate-900 font-semibold border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th className="p-4">Data/Hora</th>
+                                        <th className="p-4">IP</th>
+                                        <th className="p-4">Localização</th>
+                                        <th className="p-4">Dispositivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {accessLogs.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="4" className="p-8 text-center text-slate-400 italic">
+                                                Nenhum registro encontrado.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        accessLogs.map(log => (
+                                            <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="p-3 text-slate-500 whitespace-nowrap">
+                                                    {new Date(log.created_at).toLocaleDateString('pt-BR')} {new Date(log.created_at).toLocaleTimeString('pt-BR')}
+                                                </td>
+                                                <td className="p-3 font-mono text-xs font-bold text-slate-700 bg-slate-100 rounded w-fit">
+                                                    {log.ip_address}
+                                                </td>
+                                                <td className="p-3">
+                                                    {log.location || '-'}
+                                                </td>
+                                                <td className="p-3 text-xs text-slate-500 truncate max-w-[200px]" title={log.user_agent}>
+                                                    {log.user_agent}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Edit/Create Modal */}
