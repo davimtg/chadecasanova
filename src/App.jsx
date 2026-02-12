@@ -37,6 +37,7 @@ function App() {
           </footer>
         </>
       )}
+      <Analytics />
     </div>
   )
 }
