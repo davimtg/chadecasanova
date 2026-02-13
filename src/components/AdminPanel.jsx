@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2, Users, Eye } from 'lucide-react';
+import { Settings, Lock, Unlock, UserX, Edit2, Save, X, Plus, Trash2, Image, Link as LinkIcon, Gift, Search, LayoutDashboard, CheckCircle2, AlertCircle, Truck, PartyPopper, Wallet, Wand2, Users, Eye, ChevronUp } from 'lucide-react';
 
 export default function AdminPanel({ onClose }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -24,6 +24,42 @@ export default function AdminPanel({ onClose }) {
     // Management Modal State
     const [isManageModalOpen, setIsManageModalOpen] = useState(false);
     const [selectedGiftForManagement, setSelectedGiftForManagement] = useState(null);
+
+    // Filter Refs
+    const itemsSectionRef = useRef(null);
+    const rsvpSectionRef = useRef(null);
+    const pixSectionRef = useRef(null);
+    const panelRef = useRef(null);
+
+    // Scroll to Top State
+    const [showScrollTop, setShowScrollTop] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (panelRef.current) {
+                // Debug log
+                // console.log('Scroll:', panelRef.current.scrollTop);
+                setShowScrollTop(panelRef.current.scrollTop > 100);
+            }
+        };
+
+        const panel = panelRef.current;
+        if (panel) {
+            panel.addEventListener('scroll', handleScroll);
+            // Check initial scroll
+            handleScroll();
+        }
+
+        return () => {
+            if (panel) {
+                panel.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [isAuthenticated]);
+
+    const scrollToTop = () => {
+        panelRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const handleAutoFill = async () => {
         const url = currentGift.product_link;
@@ -389,7 +425,7 @@ export default function AdminPanel({ onClose }) {
     }
 
     return (
-        <div className="fixed inset-0 z-[60] bg-slate-50 overflow-y-auto">
+        <div ref={panelRef} className="fixed inset-0 z-[60] bg-slate-50 overflow-y-auto">
             <div className="max-w-6xl mx-auto p-4 md:p-8 pb-24">
 
                 {/* Header & Dashboard */}
@@ -415,7 +451,13 @@ export default function AdminPanel({ onClose }) {
                             <p className="text-xs md:text-sm text-slate-500 font-medium mb-1">Total de Itens</p>
                             <p className="text-2xl md:text-3xl font-bold text-slate-800">{totalItems}</p>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-rose-100 bg-rose-50/50 shadow-sm text-center">
+                        <div
+                            onClick={() => {
+                                setStatusFilter('reserved');
+                                itemsSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="bg-white p-4 rounded-xl border border-rose-100 bg-rose-50/50 shadow-sm text-center cursor-pointer hover:scale-105 transition-transform hover:shadow-md"
+                        >
                             <p className="text-xs md:text-sm text-rose-600 font-medium mb-1">Esgotados/Reserv.</p>
                             <p className="text-2xl md:text-3xl font-bold text-rose-700">{reservedItems}</p>
                         </div>
@@ -430,7 +472,10 @@ export default function AdminPanel({ onClose }) {
                             </p>
                         </div>
 
-                        <div className="bg-white p-4 rounded-xl border border-orange-100 bg-orange-50/50 shadow-sm text-center">
+                        <div
+                            onClick={() => pixSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="bg-white p-4 rounded-xl border border-orange-100 bg-orange-50/50 shadow-sm text-center cursor-pointer hover:scale-105 transition-transform hover:shadow-md"
+                        >
                             <p className="text-xs md:text-sm text-orange-600 font-medium mb-1 flex items-center justify-center gap-1">
                                 <Wallet size={14} /> Total em Pix
                             </p>
@@ -439,7 +484,10 @@ export default function AdminPanel({ onClose }) {
                             </p>
                         </div>
                         {/* RSVP Stats */}
-                        <div className="bg-white p-4 rounded-xl border border-purple-100 bg-purple-50/50 shadow-sm text-center">
+                        <div
+                            onClick={() => rsvpSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                            className="bg-white p-4 rounded-xl border border-purple-100 bg-purple-50/50 shadow-sm text-center cursor-pointer hover:scale-105 transition-transform hover:shadow-md"
+                        >
                             <p className="text-xs md:text-sm text-purple-600 font-medium mb-1 flex items-center justify-center gap-1">
                                 <Users size={14} /> Presenças
                             </p>
@@ -450,7 +498,7 @@ export default function AdminPanel({ onClose }) {
                     </div>
 
                     {/* Status Filters */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" ref={itemsSectionRef}>
                         {[
                             { id: 'all', label: 'Todos' },
                             { id: 'available', label: 'Disponíveis', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
@@ -656,7 +704,7 @@ export default function AdminPanel({ onClose }) {
             </div >
 
             {/* RSVP LIST SECTION */}
-            <div className="max-w-6xl mx-auto px-4 md:px-8 pb-12">
+            <div className="max-w-6xl mx-auto px-4 md:px-8 pb-12" ref={rsvpSectionRef}>
                 <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <Users className="text-purple-600" />
                     Lista de Convidados ({rsvps.length})
@@ -704,7 +752,7 @@ export default function AdminPanel({ onClose }) {
             </div>
 
             {/* PIX DONATIONS SECTION */}
-            < div className="max-w-6xl mx-auto px-4 md:px-8 pb-24" >
+            < div className="max-w-6xl mx-auto px-4 md:px-8 pb-24" ref={pixSectionRef}>
                 <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <Wallet className="text-orange-500" />
                     Extrato de Pix (Intenções)
@@ -1094,6 +1142,17 @@ export default function AdminPanel({ onClose }) {
                     )
                 }
             </div >
+
+            {/* Scroll to Top Button */}
+            <button
+                onClick={scrollToTop}
+                className={`flex fixed bottom-8 right-8 z-[100] rounded-full bg-orange-600 text-white p-3 shadow-lg transition-all duration-300 hover:bg-orange-700 hover:scale-110 active:scale-95 items-center justify-center
+                    ${showScrollTop ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'}
+                `}
+                aria-label="Voltar ao topo"
+            >
+                <ChevronUp size={24} />
+            </button>
         </div >
     );
 }

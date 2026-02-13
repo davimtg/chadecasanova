@@ -108,7 +108,7 @@ export default function GiftCard({ gift, onClick }) {
                         </button>
                     ) : (
                         <button className="w-full py-2 bg-rose-50 text-rose-600 rounded-lg text-sm font-bold hover:bg-rose-100 transition-colors border border-rose-100">
-                            {showProgress ? 'Presentear uma unidade' : 'Ver Detalhes'}
+                            {showProgress ? 'Presentear 🎁' : 'Presentear 🎁'}
                         </button>
                     )}
                 </div>

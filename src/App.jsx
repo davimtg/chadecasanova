@@ -100,7 +100,7 @@ function App() {
         }} />
       ) : (
         <>
-          <GiftList />
+          <GiftList onOpenAdmin={() => setShowAdmin(true)} />
 
           {/* Footer / Credits */}
           <footer className="py-8 text-center text-slate-400 text-sm">

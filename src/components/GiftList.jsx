@@ -1,19 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import GiftCard from './GiftCard';
 import GiftModal from './GiftModal';
 import EventInfo from './EventInfo';
 import PixCard from './PixCard';
-import { Sparkles, Gift, X } from 'lucide-react';
+import { Sparkles, Gift, X, Search } from 'lucide-react';
 import nosImage from '../assets/foto_casal.jpg';
 
-export default function GiftList() {
+export default function GiftList({ onOpenAdmin }) {
     const [gifts, setGifts] = useState([]);
     const [selectedGift, setSelectedGift] = useState(null);
     const [showPixModal, setShowPixModal] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [secretClicks, setSecretClicks] = useState(0);
+    const clickTimeoutRef = useRef(null);
 
     // Filters & Sort State
+    const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('all'); // Price filter
     const [categoryFilter, setCategoryFilter] = useState('all'); // Category filter
     const [sortOrder, setSortOrder] = useState('price_asc'); // price_asc | price_desc
@@ -52,7 +55,11 @@ export default function GiftList() {
                 }
             }
 
-            return matchesPrice && matchesCategory;
+            // 3. Search Filter
+            const searchLower = searchTerm.toLowerCase();
+            const matchesSearch = gift.name.toLowerCase().includes(searchLower);
+
+            return matchesPrice && matchesCategory && matchesSearch;
         })
         .sort((a, b) => {
             // 3. Sorting
@@ -63,6 +70,26 @@ export default function GiftList() {
             if (sortOrder === 'price_desc') return priceB - priceA;
             return 0;
         });
+
+    const handleSecretClick = () => {
+        const newCount = secretClicks + 1;
+        setSecretClicks(newCount);
+
+        // Clear existing timeout
+        if (clickTimeoutRef.current) {
+            clearTimeout(clickTimeoutRef.current);
+        }
+
+        if (newCount === 5) {
+            onOpenAdmin?.();
+            setSecretClicks(0);
+        } else {
+            // Set new timeout to reset counter if no clicks for 2 seconds
+            clickTimeoutRef.current = setTimeout(() => {
+                setSecretClicks(0);
+            }, 2000);
+        }
+    };
 
     const CATEGORIES = ['Cozinha', 'Banheiro', 'Quarto', 'Sala', 'Lavanderia', 'Decoração', 'Eletrodomésticos', 'Limpeza', 'Geral'];
 
@@ -78,7 +105,8 @@ export default function GiftList() {
                         <img
                             src={nosImage}
                             alt="Nós"
-                            className="rounded-full w-40 h-40 md:w-52 md:h-52 mx-auto object-cover border-4 border-white shadow-xl"
+                            className="rounded-full w-40 h-40 md:w-52 md:h-52 mx-auto object-cover border-4 border-white shadow-xl cursor-default"
+                            onClick={handleSecretClick}
                         />
                         <div className="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow-md text-orange-500">
                             <Sparkles size={24} fill="currentColor" />
@@ -140,9 +168,23 @@ export default function GiftList() {
                 {/* --- FILTERS & SORTING SECTION --- */}
                 <div className="mb-8 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">
 
+                    {/* 0. Search Bar */}
+                    <div className="relative w-full">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Search size={20} className="text-orange-300" />
+                        </div>
+                        <input
+                            type="text"
+                            className="block w-full pl-10 pr-4 py-3 border border-orange-100 rounded-xl leading-5 bg-white placeholder-orange-300/70 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 shadow-sm text-slate-700"
+                            placeholder="O que você procura? (Ex: Cafeteira)"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
                     {/* 1. Category Filters (Scrollable) */}
-                    <div className="overflow-x-auto no-scrollbar -mx-4 px-4 pb-2">
-                        <div className="flex gap-2 w-max mx-auto md:mx-0 md:justify-center md:w-full">
+                    <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 pb-2">
+                        <div className="flex gap-2 w-max mx-auto md:w-full md:flex-wrap md:justify-center">
                             <button
                                 onClick={() => setCategoryFilter('all')}
                                 className={`
