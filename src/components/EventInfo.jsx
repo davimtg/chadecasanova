@@ -50,7 +50,7 @@ export default function EventInfo() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-slate-800 text-lg">7 de Março</h3>
-                                <p className="text-slate-500">Domingo, às 13:00h</p>
+                                <p className="text-slate-500">Sábado, às 13:00h</p>
                             </div>
                         </div>
 
