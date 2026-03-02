@@ -67,6 +67,13 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
         }
     };
 
+    let domain = '';
+    if (gift?.product_link) {
+        try {
+            domain = new URL(gift.product_link).hostname.replace(/^www\./, '');
+        } catch (e) { }
+    }
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
@@ -144,10 +151,28 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
                                     href={gift.product_link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-2 text-orange-500 hover:text-orange-700 font-medium underline-offset-4 hover:underline transition-colors"
+                                    className="flex items-stretch border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors overflow-hidden group"
                                 >
-                                    <ExternalLink size={16} />
-                                    Ver exemplo na loja
+                                    <div className="w-16 h-16 shrink-0 border-r border-gray-100 bg-white">
+                                        {gift.image_url ? (
+                                            <img src={gift.image_url} alt="Produto" className="w-full h-full object-contain p-1" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-orange-200">
+                                                <Gift size={24} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
+                                        <div className="flex items-center justify-between gap-1">
+                                            <span className="text-sm font-semibold text-slate-800 group-hover:text-orange-600 transition-colors truncate">
+                                                Ver produto na loja
+                                            </span>
+                                            <ExternalLink size={14} className="text-gray-400 shrink-0 group-hover:text-orange-500 transition-colors" />
+                                        </div>
+                                        <span className="text-xs text-gray-500 font-medium mt-0.5 truncate">
+                                            {domain}
+                                        </span>
+                                    </div>
                                 </a>
                             )}
 
@@ -175,7 +200,7 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
                                         className="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 font-semibold text-white bg-orange-500 hover:bg-orange-600 active:scale-[0.98] transition-all shadow-md shadow-orange-200"
                                     >
                                         <Heart size={20} fill="currentColor" className="text-white/20" />
-                                        {maxQty > 1 ? 'Quero Presentear uma Unidade' : 'Quero Presentear Este'}
+                                        {maxQty > 1 ? 'Reservar uma Unidade' : 'Reservar Presente'}
                                     </button>
                                 </div>
                             )}
@@ -219,6 +244,15 @@ export default function GiftModal({ gift, onClose, onReserveSuccess }) {
 
                     {step === 'form' && (
                         <div className="space-y-6">
+                            {/* Callout Info */}
+                            <div className="bg-sky-50 border border-sky-200 p-4 rounded-xl flex gap-3 text-left">
+                                <AlertCircle className="text-sky-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-bold text-sky-900 leading-tight">Atenção: Você não pagará nada neste site.</p>
+                                    <p className="text-sm text-sky-800 mt-1">Ao clicar em 'Reservar', você apenas avisa aos outros convidados que já escolheu este item. A compra deve ser feita por você em uma loja de sua preferência.</p>
+                                </div>
+                            </div>
+
                             <div className="text-center">
                                 <h3 className="text-xl font-bold text-slate-800 font-serif">Ótima escolha!</h3>
                                 <p className="text-slate-500 text-sm mt-1">

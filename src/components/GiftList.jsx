@@ -4,6 +4,7 @@ import GiftCard from './GiftCard';
 import GiftModal from './GiftModal';
 import EventInfo from './EventInfo';
 import PixCard from './PixCard';
+import HowItWorks from './HowItWorks';
 import { Sparkles, Gift, X, Search } from 'lucide-react';
 import nosImage from '../assets/foto_casal.jpg';
 
@@ -164,6 +165,9 @@ export default function GiftList({ onOpenAdmin }) {
 
                 {/* EVENT INFO & RSVP */}
                 <EventInfo />
+
+                {/* HOW IT WORKS */}
+                <HowItWorks />
 
                 {/* --- FILTERS & SORTING SECTION --- */}
                 <div className="mb-8 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100">

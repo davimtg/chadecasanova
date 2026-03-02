@@ -12,6 +12,7 @@ export default function AdminPanel({ onClose }) {
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'available', 'reserved'
+    const [sortBy, setSortBy] = useState('recent_reserved');
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -181,6 +182,38 @@ export default function AdminPanel({ onClose }) {
         }
 
         return matchesSearch && matchesStatus;
+    });
+
+    const sortedGifts = [...filteredGifts].sort((a, b) => {
+        const isReserved = (gift) => {
+            return !!gift.reserved_by || (gift.max_quantity > 1 && (gift.current_quantity || 0) >= gift.max_quantity) || ((gift.current_quantity || 0) > 0);
+        };
+        const resA = isReserved(a);
+        const resB = isReserved(b);
+
+        if (sortBy === 'recent_reserved') {
+            if (resA && !resB) return -1;
+            if (!resA && resB) return 1;
+
+            if (resA && resB) {
+                const timeA = new Date(a.updated_at || a.created_at || 0).getTime();
+                const timeB = new Date(b.updated_at || b.created_at || 0).getTime();
+                return timeB - timeA;
+            }
+            return 0; // Maintain original order initially (handled automatically by stable sort)
+        }
+
+        const priceA = parseFloat(a.price) || 0;
+        const priceB = parseFloat(b.price) || 0;
+        const nameA = a.name?.toLowerCase() || '';
+        const nameB = b.name?.toLowerCase() || '';
+
+        if (sortBy === 'price_desc') return priceB - priceA;
+        if (sortBy === 'price_asc') return priceA - priceB;
+        if (sortBy === 'name_asc') return nameA.localeCompare(nameB);
+        if (sortBy === 'name_desc') return nameB.localeCompare(nameA);
+
+        return 0;
     });
 
     const stats = {
@@ -497,26 +530,41 @@ export default function AdminPanel({ onClose }) {
                         </div>
                     </div>
 
-                    {/* Status Filters */}
-                    <div className="flex gap-2" ref={itemsSectionRef}>
-                        {[
-                            { id: 'all', label: 'Todos' },
-                            { id: 'available', label: 'Disponíveis', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-                            { id: 'reserved', label: 'Reservados', color: 'bg-rose-100 text-rose-700 border-rose-200' }
-                        ].map(step => (
-                            <button
-                                key={step.id}
-                                onClick={() => setStatusFilter(step.id)}
-                                className={`
-                                    px-4 py-1.5 rounded-full text-sm font-bold transition-all border
-                                    ${statusFilter === step.id
-                                        ? (step.color || 'bg-slate-800 text-white border-slate-800')
-                                        : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}
-                                `}
-                            >
-                                {step.label}
-                            </button>
-                        ))}
+                    {/* Status Filters and Sort */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4" ref={itemsSectionRef}>
+                        <div className="flex gap-2">
+                            {[
+                                { id: 'all', label: 'Todos' },
+                                { id: 'available', label: 'Disponíveis', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                                { id: 'reserved', label: 'Reservados', color: 'bg-rose-100 text-rose-700 border-rose-200' }
+                            ].map(step => (
+                                <button
+                                    key={step.id}
+                                    onClick={() => setStatusFilter(step.id)}
+                                    className={`
+                                        px-4 py-1.5 rounded-full text-sm font-bold transition-all border
+                                        ${statusFilter === step.id
+                                            ? (step.color || 'bg-slate-800 text-white border-slate-800')
+                                            : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'}
+                                    `}
+                                >
+                                    {step.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Order Dropdown */}
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                            className="bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-700 shadow-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400 outline-none"
+                        >
+                            <option value="recent_reserved">Últimos Reservados (Padrão)</option>
+                            <option value="price_desc">Maior Preço</option>
+                            <option value="price_asc">Menor Preço</option>
+                            <option value="name_asc">Nome (A-Z)</option>
+                            <option value="name_desc">Nome (Z-A)</option>
+                        </select>
                     </div>
 
                     {/* Actions & Search */}
@@ -547,7 +595,7 @@ export default function AdminPanel({ onClose }) {
 
                 {/* Mobile View: Cards (Hidden on Desktop) */}
                 <div className="grid grid-cols-1 gap-4 md:hidden">
-                    {filteredGifts.map(gift => (
+                    {sortedGifts.map(gift => (
                         <div key={gift.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
                             <div className="flex gap-4 mb-4">
                                 <div className="w-16 h-16 rounded-lg bg-slate-50 shrink-0 overflow-hidden border border-slate-100">
@@ -572,15 +620,24 @@ export default function AdminPanel({ onClose }) {
                                     <span>Preço:</span>
                                     <span className="font-semibold text-slate-800">R$ {parseFloat(gift.price).toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between items-center">
-                                    <span>Status:</span>
-                                    {(gift.reserved_by || (gift.max_quantity > 1 && (gift.current_quantity || 0) >= gift.max_quantity)) ? (
-                                        <span className="text-emerald-600 font-bold flex items-center gap-1 text-xs">
-                                            <Lock size={12} /> Reservado
-                                        </span>
-                                    ) : (
-                                        <span className="text-slate-400 font-medium text-xs">Disponível</span>
-                                    )}
+                                <div className="flex justify-between items-start">
+                                    <span className="mt-0.5">Status:</span>
+                                    <div className="text-right flex flex-col items-end">
+                                        {(gift.reserved_by || (gift.max_quantity > 1 && (gift.current_quantity || 0) >= gift.max_quantity)) ? (
+                                            <>
+                                                <span className="text-emerald-600 font-bold flex items-center gap-1 text-xs">
+                                                    <Lock size={12} /> Reservado
+                                                </span>
+                                                {gift.reserved_by && (
+                                                    <span className="text-xs text-slate-500 mt-1 break-words line-clamp-2 max-w-[180px]" title={gift.reserved_by}>
+                                                        por: {gift.reserved_by}
+                                                    </span>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <span className="text-slate-400 font-medium text-xs mt-0.5">Disponível</span>
+                                        )}
+                                    </div>
                                 </div>
                                 {getLogisticsSummary(gift) && (
                                     <div className="mt-2 pt-2 border-t border-slate-200 flex justify-end">
@@ -630,7 +687,7 @@ export default function AdminPanel({ onClose }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredGifts.map(gift => (
+                            {sortedGifts.map(gift => (
                                 <tr key={gift.id} className="hover:bg-slate-50/80 transition-colors group">
                                     <td className="p-4 pl-5">
                                         <div className="w-12 h-12 rounded-lg bg-slate-50 overflow-hidden border border-slate-100 relative group-hover:shadow-sm transition-all">
